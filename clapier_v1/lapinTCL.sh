@@ -8,17 +8,11 @@ base_url="https://download.data.grandlyon.com/ws/rdata/tcl_sytral.tclpassagearre
 # PATH_LAPINE='' # Chemin du script qui permet d'envoyer dans la file le message
 
 ## Paramètre sur l'arrêt
-id_arret=2042 # Montchat Pinel
-nom_arret='Pinel'
-ligne='C26A' # C26 direction Grange blanche
+id_arret='' # Id de l'arrêt, à trouver sur https://data.grandlyon.com/jeux-de-donnees/points-arret-reseau-transports-commun-lyonnais/donnees
+nom_arret='' # Rentrer manuellement le nom de l'arrêt   
+ligne='' # Nom de la ligne commercial donné sur le champ "ligne" de la requête faite à l'API. 
+         # Par exemple pour la ligne C26 direction Grange blanche se sera "C26A", pour la ligne T3 dans les 2 directions se sera "T3"
 
-id_arret=35665 # Gare de Villerbanne
-nom_arret='Gare Villerbanne'
-ligne='T3' # 
-
-id_arret=43119 # Montchat Place Ronde
-nom_arret='Place ronde'
-ligne='C26A' # C26 direction Grange blanche
 
 ligne0="${ligne} ${nom_arret}"
 
@@ -68,3 +62,4 @@ for index in "${!delaispassage[@]}"; do
     message_complet="${ligne0};${ligne1}"
     ${PATH_LAPINE} -m "${message_complet}" -a 5 -x "$(date --date 'now + 1 minutes' +"%Y-%m-%d %H:%M:%S")"
 done
+
