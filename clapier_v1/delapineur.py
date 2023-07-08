@@ -3,6 +3,7 @@ import pika, sys, os
 import serial.tools.list_ports
 import time
 from datetime import datetime
+import subprocess
 
 
 # Arduino
@@ -132,24 +133,64 @@ def check_validite_msg(params_msg: list) -> bool:
     else:
         return False
 
-def main():
+def is_rabbitmq_running():
+    try:
+        output = subprocess.check_output(["systemctl", "is-active", "rabbitmq-server"])
+        return output.strip() == b"active"
+    except subprocess.CalledProcessError:
+        return False
 
-    print("Creation ou recuperation de la queue, patienter... ")
-    arduino.write("5Creation ou recuperation de la queue ;5patienter... ".encode())
-   
+def main():
     try:
         credentials = pika.PlainCredentials(username=username_queue, password=password_queue)
-        credentials = pika.PlainCredentials(username=username_queue, password=password_queue)
         parameters = pika.ConnectionParameters(host=ip_rabbitMQ_service, 
-                                            port=port_rabbitMQ_service,
-                                            virtual_host=virtual_host,
-                                            credentials=credentials)
-        connection = pika.BlockingConnection(parameters)
+                                               port=port_rabbitMQ_service,
+                                               virtual_host=virtual_host,
+                                               credentials=credentials)
+
+        nb_tentative_connection = 0
+        print("Attente du service RabbitMQ...")
+        arduino.write("6Attente du service RabbitMQ. ;0patientez... ".encode())
+        
+        while(not is_rabbitmq_running() and nb_tentative_connection < 30): # 30 essais = 5 minutes
+              time.sleep(10)
+              nb_tentative_connection += 1 
+       
+        if not is_rabbitmq_running():
+            print("Temps d'attente trop long pour le démarrage de RabbitMQ. Arrêt du délapineur.")
+            arduino.write("6Temps d'attente trop long ;2du demarrage RabbitMQ ".encode())
+            time.sleep(5)
+            FermerDelapineur()
+        else:
+            print("Le service RabbitMQ est actif. connexion en cours, patientez...")
+            arduino.write("6Connexion en cours au service RabbitMQ ;0patientez... ".encode())
+        time.sleep(2)
+
+        connection = None
+        nb_tentative_connection = 0
+        while not connection and nb_tentative_connection < 5: 
+            try:
+                connection = pika.BlockingConnection(parameters)
+            except pika.exceptions.AMQPConnectionError:
+                print("Failed to connect, retrying in 5 seconds...")
+                time.sleep(5)
+                nb_tentative_connection += 1
+        
+        if not connection:
+            print("Echec de la connexion du service RabbitMQ.  Arrêt du délapineur.")
+            arduino.write("3Echec de la connexion ;0avec RabbitMQ".encode())
+            time.sleep(5)
+            FermerDelapineur()
+        else:
+            print("Connecté au service RabbitMQ . Création ou récuperation de la queue, patientez...")
+            arduino.write("6Creation ou recuperation de la queue ;0patientez... ".encode())
+            time.sleep(2)
+
         channel = connection.channel()
         channel.queue_declare(queue=queue_name)
-
         channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
-        arduino.write("0Operationnel ;7en attente de message sur la queue ".encode())
+        print("Opérationnel, en attente de messages sur la queue")
+        arduino.write("0Operationnel ;6en attente de messages sur la queue ".encode())
         time.sleep(2)
     except Exception as e:
         print(e) 
@@ -170,6 +211,7 @@ def get_arduino_port():
 
 def FermerDelapineur():
     if arduino is not None:
+        arduino.write("3Arret du programme.  ;0Au revoir".encode())
         arduino.close()
     try:
       sys.exit(0)
@@ -185,8 +227,8 @@ if __name__ == '__main__':
         arduino = serial.Serial(arduino_port, arduino_baud)
         # Attendre que la connexion soit établie
         time.sleep(5)
-        print("Connexion arduino etablie attente de la queue...")
-        arduino.write("5Connexion arduino etablie ;5attente de la queue... ".encode())
+        print("Connexion arduino etablie")
+        arduino.write("3Delapineur connecte ;0avec succes".encode())
         time.sleep(5)
 
         main()
