@@ -158,9 +158,30 @@ def main():
     print(' [*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
 
+# Récupère le port sur lequel est branché la arduino
+def get_arduino_port():
+    ports = list(serial.tools.list_ports.comports())
+    for port in ports:
+        if port.manufacturer is not None and "Arduino" in port.manufacturer:
+            print(f"Arduino is connected on port: {port}")
+            return port.device
+    print("Could not find an Arduino connected to the system.")
+    return None
+
+def FermerDelapineur():
+    if arduino is not None:
+        arduino.close()
+    try:
+      sys.exit(0)
+    except SystemExit:
+        os._exit(0)
+
 if __name__ == '__main__':
     try:
         # Remplacez 'COM3' par le nom du PORT_QUEUE_API série utilisé par votre carte Arduino
+        arduino_port = get_arduino_port()
+        if arduino_port is None:
+            raise serial.SerialException("Pas de port usb trouvé avec une arduino branché dessus")
         arduino = serial.Serial(arduino_port, arduino_baud)
         # Attendre que la connexion soit établie
         time.sleep(5)
@@ -169,11 +190,9 @@ if __name__ == '__main__':
         time.sleep(5)
 
         main()
+    except serial.SerialException as e:
+        # print(e)
+        FermerDelapineur()
     except KeyboardInterrupt:
         print('Interrupted')
-        try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)
-    finally:
-        arduino.close()
+        FermerDelapineur()
