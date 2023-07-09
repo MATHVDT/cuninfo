@@ -38,7 +38,6 @@ if [ -z $LISTE_ID_AMIS_STEAM ]; then
 
     # Formate la liste d'amis sur 1 seule ligne avec ',' comme séparateur des ids
     LISTE_ID_AMIS_STEAM=$(echo "$response_liste_amis" | grep -o '"steamid":"[^"]*' | grep -o '[^"]*$' | tr '\n' ',')
-    LISTE_ID_AMIS_STEAM=${LISTE_ID_AMIS_STEAM::-1} # Supprime la dernière virgule
 fi
 
 # Récup info sur le user

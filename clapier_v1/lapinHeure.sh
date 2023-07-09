@@ -8,7 +8,6 @@
 LANG=fr_FR.UTF-8
 
 jour="$(date +"%A %d %b")"
-jour=${jour::-1} # Supprime la dernière le . de l'abréviation du mois
 heure="$(date +%R)"
 
 # Calcule le nombre d'espace nécessaire pour que la ligne fasse 16 caracères
