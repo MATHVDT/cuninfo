@@ -1,4 +1,4 @@
-# !/bin/bash
+#!/bin/bash
 #----------------------------------------------#
 # Ce script envoie l'heure actuelle sur le
 # script lapine.sh pour un affichage d'une min
